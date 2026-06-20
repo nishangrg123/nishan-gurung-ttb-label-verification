@@ -4,7 +4,9 @@ version = "0.1.0"
 description = "FastAPI backend for the TTB Label Verification proof-of-concept."
 requires-python = ">=3.12"
 dependencies = [
+    "certifi>=2026.6.17",
     "fastapi>=0.115.0",
+    "pillow>=12.2.0",
     "pydantic-settings>=2.6.0",
     "uvicorn[standard]>=0.30.0",
 ]
@@ -17,4 +19,3 @@ dev = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-
