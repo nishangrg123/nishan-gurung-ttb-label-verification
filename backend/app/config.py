@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     vision_timeout_seconds: float = 4.0
     max_image_bytes: int = 4_000_000
     max_image_dimension: int = 1600
+    use_fake_vision: bool = False
 
     model_config = SettingsConfigDict(
         env_file=BACKEND_DIR / ".env",
