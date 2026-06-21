@@ -84,7 +84,7 @@ def test_preprocess_downscales_and_reencodes_to_jpeg() -> None:
 
     with Image.open(BytesIO(processed.data)) as image:
         assert processed.content_type == "image/jpeg"
-        assert max(image.size) <= 1600
+        assert max(image.size) <= 700
 
 
 def test_preprocess_rejects_undecodable_image_bytes() -> None:

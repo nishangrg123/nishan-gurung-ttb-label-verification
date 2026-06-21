@@ -119,7 +119,7 @@ def preprocess_image(
     image_bytes: bytes,
     content_type: str,
     max_image_bytes: int = 4_000_000,
-    max_image_dimension: int = 1600,
+    max_image_dimension: int = 700,
 ) -> ProcessedImage:
     if content_type not in ALLOWED_IMAGE_TYPES:
         raise VisionServiceError("Unsupported image type. Use JPEG, PNG, or WebP.")
@@ -133,7 +133,7 @@ def preprocess_image(
             image.thumbnail((max_image_dimension, max_image_dimension))
             rgb_image = image.convert("RGB")
             output = io.BytesIO()
-            rgb_image.save(output, format="JPEG", quality=82, optimize=True)
+            rgb_image.save(output, format="JPEG", quality=76, optimize=True)
     except UnidentifiedImageError as exc:
         raise VisionServiceError("Image could not be decoded.") from exc
     except OSError as exc:

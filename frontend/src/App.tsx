@@ -274,6 +274,7 @@ export function App() {
         <button
           className={mode === "single" ? "mode-button active" : "mode-button"}
           type="button"
+          aria-pressed={mode === "single"}
           onClick={() => switchMode("single")}
         >
           Single Label
@@ -281,6 +282,7 @@ export function App() {
         <button
           className={mode === "batch" ? "mode-button active" : "mode-button"}
           type="button"
+          aria-pressed={mode === "batch"}
           onClick={() => switchMode("batch")}
         >
           Batch Upload

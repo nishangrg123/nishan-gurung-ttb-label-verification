@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     vision_model: str = "gpt-4o-mini"
     vision_timeout_seconds: float = 4.0
     max_image_bytes: int = 4_000_000
-    max_image_dimension: int = 1600
+    max_image_dimension: int = 700
     batch_concurrency: int = 2
     max_batch_size: int = 5
     use_fake_vision: bool = False
