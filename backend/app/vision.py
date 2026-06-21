@@ -36,7 +36,10 @@ Fields:
 - raw_text
 - extraction_confidence
 
-Copy the government warning exactly as printed, preserving case and punctuation.
+Copy the government warning statement exactly as printed, preserving case and
+punctuation. Return the statement that begins "GOVERNMENT WARNING:"; if the
+label also has a separate section heading that only says "GOVERNMENT WARNING",
+do not include that extra heading in government_warning.
 The comparison engine is case-sensitive for that field.
 """.strip()
 

@@ -109,7 +109,7 @@ def compare_net_contents(expected: str, found: str | None) -> FieldResult:
 
 def compare_government_warning(found: str | None) -> FieldResult:
     normalized_expected = _collapse_whitespace(CANONICAL_GOVERNMENT_WARNING)
-    normalized_found = _collapse_whitespace(found)
+    normalized_found = _normalize_government_warning(found)
 
     return FieldResult(
         field="government_warning",
@@ -133,6 +133,16 @@ def _collapse_whitespace(value: str | None) -> str:
         return ""
 
     return " ".join(value.split())
+
+
+def _normalize_government_warning(value: str | None) -> str:
+    collapsed = _collapse_whitespace(value)
+    duplicate_heading_prefix = f"GOVERNMENT WARNING {CANONICAL_GOVERNMENT_WARNING}"
+
+    if collapsed == duplicate_heading_prefix:
+        return CANONICAL_GOVERNMENT_WARNING
+
+    return collapsed
 
 
 def _fuzzy_ratio(expected: str, found: str) -> int:

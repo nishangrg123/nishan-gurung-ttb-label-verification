@@ -111,6 +111,17 @@ def test_correct_all_caps_government_warning_passes() -> None:
     assert _field(result, "government_warning").status == "PASS"
 
 
+def test_government_warning_passes_with_duplicate_section_heading() -> None:
+    scanned_warning_block = f"GOVERNMENT WARNING {CANONICAL_GOVERNMENT_WARNING}"
+
+    result = compare_label(
+        _application(),
+        _extracted(government_warning=scanned_warning_block),
+    )
+
+    assert _field(result, "government_warning").status == "PASS"
+
+
 def test_government_warning_allows_whitespace_collapse_only() -> None:
     warning_with_extra_whitespace = CANONICAL_GOVERNMENT_WARNING.replace(
         "According to the Surgeon General,",
