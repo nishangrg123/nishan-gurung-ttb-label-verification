@@ -65,6 +65,36 @@ def _post_verify(client: TestClient, application_data: str | None = None, conten
     )
 
 
+def _post_verify_batch(
+    client: TestClient,
+    application_records: list[dict] | str,
+    content_types: list[str] | None = None,
+    image_payloads: list[bytes] | None = None,
+):
+    content_types = content_types or ["image/png"] * len(application_records)
+    image_payloads = image_payloads or [_image_bytes() for _ in content_types]
+    application_data = (
+        application_records
+        if isinstance(application_records, str)
+        else json.dumps(application_records)
+    )
+
+    return client.post(
+        "/verify/batch",
+        data={"application_data": application_data},
+        files=[
+            ("images", (f"label-{index + 1}.png", image_payloads[index], content_type))
+            for index, content_type in enumerate(content_types)
+        ],
+    )
+
+
+def _application_record(**overrides: str) -> dict:
+    data = json.loads(_application_data())
+    data.update(overrides)
+    return data
+
+
 def teardown_function() -> None:
     app.dependency_overrides.clear()
 
@@ -217,6 +247,151 @@ def test_verify_allows_partial_extracted_label_and_returns_needs_review() -> Non
     assert class_result["found"] is None
 
 
+def test_verify_batch_returns_summary_and_item_results() -> None:
+    client = _client_with_vision(FakeVisionService(_extracted_label()))
+
+    response = _post_verify_batch(
+        client,
+        [_application_record(), _application_record(), _application_record()],
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["summary"] == {
+        "total": 3,
+        "approved": 3,
+        "needs_review": 0,
+        "errors": 0,
+    }
+    assert len(payload["items"]) == 3
+    assert all(item["status"] == "COMPLETED" for item in payload["items"])
+    assert all(item["result"]["overall_verdict"] == "APPROVED" for item in payload["items"])
+
+
+def test_verify_batch_counts_needs_review_without_failing_whole_batch() -> None:
+    client = _client_with_vision(SequenceVisionService([
+        _extracted_label(),
+        _extracted_label(brand_name="Different Brand"),
+        _extracted_label(),
+    ]))
+
+    response = _post_verify_batch(
+        client,
+        [_application_record(), _application_record(), _application_record()],
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["summary"] == {
+        "total": 3,
+        "approved": 2,
+        "needs_review": 1,
+        "errors": 0,
+    }
+    assert payload["items"][1]["result"]["overall_verdict"] == "NEEDS_REVIEW"
+
+
+def test_verify_batch_returns_item_error_for_bad_file_type() -> None:
+    client = _client_with_vision(FakeVisionService(_extracted_label()))
+
+    response = _post_verify_batch(
+        client,
+        [_application_record(), _application_record()],
+        content_types=["image/png", "application/pdf"],
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["summary"] == {
+        "total": 2,
+        "approved": 1,
+        "needs_review": 0,
+        "errors": 1,
+    }
+    assert payload["items"][1]["status"] == "ERROR"
+    assert payload["items"][1]["error"] == "Unsupported image type. Use JPEG, PNG, or WebP."
+    assert payload["items"][0]["result"]["overall_verdict"] == "APPROVED"
+
+
+def test_verify_batch_returns_item_error_for_vision_failure() -> None:
+    client = _client_with_vision(SequenceVisionService([
+        _extracted_label(),
+        VisionServiceError("Vision model request timed out."),
+        _extracted_label(),
+    ]))
+
+    response = _post_verify_batch(
+        client,
+        [_application_record(), _application_record(), _application_record()],
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["summary"] == {
+        "total": 3,
+        "approved": 2,
+        "needs_review": 0,
+        "errors": 1,
+    }
+    assert payload["items"][1]["status"] == "ERROR"
+    assert payload["items"][1]["error"] == "Vision model request timed out."
+
+
+def test_verify_batch_rejects_mismatched_image_and_application_counts() -> None:
+    client = _client_with_vision(FakeVisionService(_extracted_label()))
+
+    response = _post_verify_batch(
+        client,
+        [_application_record()],
+        content_types=["image/png", "image/png"],
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == (
+        "Number of images must match number of application data records."
+    )
+
+
+def test_verify_batch_rejects_malformed_application_array() -> None:
+    client = _client_with_vision(FakeVisionService(_extracted_label()))
+
+    response = _post_verify_batch(client, "{not json", content_types=["image/png"])
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "application_data must be a valid JSON array."
+
+
+def test_verify_batch_rejects_too_many_labels() -> None:
+    client = _client_with_vision(FakeVisionService(_extracted_label()))
+    original_max_batch_size = main_module.settings.max_batch_size
+    main_module.settings.max_batch_size = 2
+
+    try:
+        response = _post_verify_batch(
+            client,
+            [_application_record(), _application_record(), _application_record()],
+        )
+    finally:
+        main_module.settings.max_batch_size = original_max_batch_size
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "Batch cannot include more than 2 labels."
+
+
 class FailingVisionService(VisionService):
     def extract(self, image_bytes: bytes, content_type: str) -> ExtractedLabel:
         raise VisionServiceError("Vision model request timed out.")
+
+
+class SequenceVisionService(VisionService):
+    def __init__(self, results: list[ExtractedLabel | VisionServiceError]) -> None:
+        self.results = results
+        self.index = 0
+
+    def extract(self, image_bytes: bytes, content_type: str) -> ExtractedLabel:
+        result = self.results[self.index]
+        self.index += 1
+        if isinstance(result, VisionServiceError):
+            raise result
+
+        return result

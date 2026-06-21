@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 
 FieldStatus = Literal["PASS", "FAIL"]
 OverallVerdict = Literal["APPROVED", "NEEDS_REVIEW"]
+BatchItemStatus = Literal["COMPLETED", "ERROR"]
 
 
 class ApplicationData(BaseModel):
@@ -41,3 +42,23 @@ class VerificationResult(BaseModel):
     results: list[FieldResult]
     overall_verdict: OverallVerdict
     latency_ms: float = 0
+
+
+class BatchSummary(BaseModel):
+    total: int
+    approved: int
+    needs_review: int
+    errors: int
+
+
+class BatchItemResult(BaseModel):
+    index: int
+    filename: str
+    status: BatchItemStatus
+    result: VerificationResult | None = None
+    error: str | None = None
+
+
+class BatchVerificationResponse(BaseModel):
+    summary: BatchSummary
+    items: list[BatchItemResult]
