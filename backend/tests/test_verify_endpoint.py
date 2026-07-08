@@ -5,11 +5,18 @@ from fastapi.testclient import TestClient
 from PIL import Image
 
 from app import main as main_module
-from app.comparison import CANONICAL_GOVERNMENT_WARNING
 from app.main import app
 from app.models import ExtractedLabel
 from app.verification import get_vision_service, get_real_vision_service
 from app.vision import FakeVisionService, OpenAIVisionService, VisionService, VisionServiceError
+
+
+TEST_GOVERNMENT_WARNING = (
+    "GOVERNMENT WARNING: (1) According to the Surgeon General, women should not "
+    "drink alcoholic beverages during pregnancy because of the risk of birth defects. "
+    "(2) Consumption of alcoholic beverages impairs your ability to drive a car or "
+    "operate machinery, and may cause health problems."
+)
 
 
 def _image_bytes() -> bytes:
@@ -27,7 +34,7 @@ def _application_data(**overrides: str) -> str:
         "net_contents": "750 mL",
         "producer": "Example Distilling Co.",
         "country_of_origin": "United States",
-        "government_warning": CANONICAL_GOVERNMENT_WARNING,
+        "government_warning": TEST_GOVERNMENT_WARNING,
     }
     data.update(overrides)
     return json.dumps(data)
@@ -41,7 +48,7 @@ def _extracted_label(**overrides: str | None) -> ExtractedLabel:
         "net_contents": "750ml",
         "producer": "Example Distilling Co.",
         "country_of_origin": "USA",
-        "government_warning": CANONICAL_GOVERNMENT_WARNING,
+        "government_warning": TEST_GOVERNMENT_WARNING,
     }
     data.update(overrides)
     return ExtractedLabel(**data)
@@ -152,7 +159,7 @@ def test_verify_returns_needs_review_for_mismatch() -> None:
 
 
 def test_verify_surfaces_extracted_warning_text_on_failure() -> None:
-    misread_warning = CANONICAL_GOVERNMENT_WARNING.replace("pregnancy", "pregnancv")
+    misread_warning = TEST_GOVERNMENT_WARNING.replace("pregnancy", "pregnancv")
     client = _client_with_vision(
         FakeVisionService(_extracted_label(government_warning=misread_warning))
     )

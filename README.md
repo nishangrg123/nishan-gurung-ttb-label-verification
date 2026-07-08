@@ -94,6 +94,16 @@ cd frontend
 npm run build
 ```
 
+## Comparison Strategy
+
+The backend compares extracted label fields against the submitted application values and returns field-level pass/fail results.
+
+- Brand name, alcohol class/type, and producer use Python `SequenceMatcher` over lowercased, punctuation-stripped, whitespace-normalized text. The fuzzy threshold is `FUZZY_THRESHOLD = 90`, so token-order changes can still affect the character-ratio score.
+- ABV is parsed from percent, `alc./vol.`, or proof text and passes within 0.1 percentage points.
+- Net contents are normalized to milliliters from `mL`, `L`, `cL`, `fl oz`, or `oz`, then pass within +/- 1 mL.
+- Country of origin uses explicit synonym families, including US, UK, France, and Mexico aliases.
+- Government warning is exact and case-sensitive after whitespace collapse only. It compares the submitted application warning to the extracted warning; it does not compare against a hardcoded statutory warning.
+
 ## Deployment
 
 Backend on Render:
