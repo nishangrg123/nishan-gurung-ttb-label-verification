@@ -17,6 +17,12 @@ Phase 0 is a deployable skeleton:
 - Frontend: React, TypeScript, Vite
 - Deployment target: Render for the backend, Vercel for the frontend
 
+## Live Demo
+
+- Frontend: https://nishan-gurung-ttb-label-verificatio.vercel.app/
+- Backend base URL: https://ttb-label-verification-api.onrender.com
+- Backend health check: https://ttb-label-verification-api.onrender.com/health
+
 ## Local Setup
 
 Install prerequisites:
