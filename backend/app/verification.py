@@ -1,18 +1,21 @@
 import json
 import time
+from functools import lru_cache
 
 from pydantic import ValidationError
 
 from app.comparison import compare_label
 from app.models import ApplicationData, VerificationResult
 from app.config import get_settings
-from app.vision import FakeVisionService, OpenAIVisionService, VisionService
+from app.vision import OpenAIVisionService, VisionService
 
 
 def get_vision_service() -> VisionService:
-    if get_settings().use_fake_vision:
-        return FakeVisionService()
+    return get_real_vision_service()
 
+
+@lru_cache
+def get_real_vision_service() -> VisionService:
     return OpenAIVisionService()
 
 

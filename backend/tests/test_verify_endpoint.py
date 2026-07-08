@@ -6,11 +6,10 @@ from PIL import Image
 
 from app import main as main_module
 from app.comparison import CANONICAL_GOVERNMENT_WARNING
-from app.config import get_settings
 from app.main import app
 from app.models import ExtractedLabel
-from app.verification import get_vision_service
-from app.vision import FakeVisionService, VisionService, VisionServiceError
+from app.verification import get_vision_service, get_real_vision_service
+from app.vision import FakeVisionService, OpenAIVisionService, VisionService, VisionServiceError
 
 
 def _image_bytes() -> bytes:
@@ -97,6 +96,15 @@ def _application_record(**overrides: str) -> dict:
 
 def teardown_function() -> None:
     app.dependency_overrides.clear()
+    get_real_vision_service.cache_clear()
+
+
+def _assert_batch_summary(
+    payload: dict,
+    expected: dict[str, int],
+) -> None:
+    assert set(payload["summary"]) == {"passed", "needs_review", "total"}
+    assert payload["summary"] == expected
 
 
 def test_verify_returns_approved_result_for_matching_label() -> None:
@@ -111,15 +119,22 @@ def test_verify_returns_approved_result_for_matching_label() -> None:
     assert len(payload["results"]) == 7
 
 
-def test_get_vision_service_can_use_fake_vision_for_local_checks() -> None:
-    settings = get_settings()
-    original_use_fake_vision = settings.use_fake_vision
-    settings.use_fake_vision = True
+def test_get_vision_service_returns_cached_real_provider() -> None:
+    first_service = get_vision_service()
+    second_service = get_vision_service()
 
-    try:
-        assert isinstance(get_vision_service(), FakeVisionService)
-    finally:
-        settings.use_fake_vision = original_use_fake_vision
+    assert isinstance(first_service, OpenAIVisionService)
+    assert second_service is first_service
+
+
+def test_vision_service_dependency_override_can_swap_fake_provider() -> None:
+    fake_service = FakeVisionService(_extracted_label())
+    client = _client_with_vision(fake_service)
+
+    response = _post_verify(client, _application_data())
+
+    assert response.status_code == 200
+    assert response.json()["overall_verdict"] == "APPROVED"
 
 
 def test_verify_returns_needs_review_for_mismatch() -> None:
@@ -257,12 +272,11 @@ def test_verify_batch_returns_summary_and_item_results() -> None:
 
     assert response.status_code == 200
     payload = response.json()
-    assert payload["summary"] == {
-        "total": 3,
-        "approved": 3,
+    _assert_batch_summary(payload, {
+        "passed": 3,
         "needs_review": 0,
-        "errors": 0,
-    }
+        "total": 3,
+    })
     assert len(payload["items"]) == 3
     assert all(item["status"] == "COMPLETED" for item in payload["items"])
     assert all(item["result"]["overall_verdict"] == "APPROVED" for item in payload["items"])
@@ -282,12 +296,11 @@ def test_verify_batch_counts_needs_review_without_failing_whole_batch() -> None:
 
     assert response.status_code == 200
     payload = response.json()
-    assert payload["summary"] == {
-        "total": 3,
-        "approved": 2,
+    _assert_batch_summary(payload, {
+        "passed": 2,
         "needs_review": 1,
-        "errors": 0,
-    }
+        "total": 3,
+    })
     assert payload["items"][1]["result"]["overall_verdict"] == "NEEDS_REVIEW"
 
 
@@ -302,12 +315,11 @@ def test_verify_batch_returns_item_error_for_bad_file_type() -> None:
 
     assert response.status_code == 200
     payload = response.json()
-    assert payload["summary"] == {
-        "total": 2,
-        "approved": 1,
+    _assert_batch_summary(payload, {
+        "passed": 1,
         "needs_review": 0,
-        "errors": 1,
-    }
+        "total": 2,
+    })
     assert payload["items"][1]["status"] == "ERROR"
     assert payload["items"][1]["error"] == "Unsupported image type. Use JPEG, PNG, or WebP."
     assert payload["items"][0]["result"]["overall_verdict"] == "APPROVED"
@@ -327,12 +339,11 @@ def test_verify_batch_returns_item_error_for_vision_failure() -> None:
 
     assert response.status_code == 200
     payload = response.json()
-    assert payload["summary"] == {
-        "total": 3,
-        "approved": 2,
+    _assert_batch_summary(payload, {
+        "passed": 2,
         "needs_review": 0,
-        "errors": 1,
-    }
+        "total": 3,
+    })
     assert payload["items"][1]["status"] == "ERROR"
     assert payload["items"][1]["error"] == "Vision model request timed out."
 

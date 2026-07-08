@@ -16,7 +16,6 @@ class Settings(BaseSettings):
     max_image_dimension: int = 700
     batch_concurrency: int = 2
     max_batch_size: int = 5
-    use_fake_vision: bool = False
 
     model_config = SettingsConfigDict(
         env_file=BACKEND_DIR / ".env",

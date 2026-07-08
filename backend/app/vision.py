@@ -6,7 +6,7 @@ import urllib.error
 import urllib.request
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Protocol
 
 import certifi
 from PIL import Image, UnidentifiedImageError
@@ -61,9 +61,9 @@ class ProcessedImage:
 HttpPost = Callable[[str, dict[str, Any], dict[str, str], float], dict[str, Any]]
 
 
-class VisionService:
+class VisionService(Protocol):
     def extract(self, image_bytes: bytes, content_type: str) -> ExtractedLabel:
-        raise NotImplementedError
+        ...
 
 
 class FakeVisionService(VisionService):

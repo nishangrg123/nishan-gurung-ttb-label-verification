@@ -45,10 +45,9 @@ class VerificationResult(BaseModel):
 
 
 class BatchSummary(BaseModel):
-    total: int
-    approved: int
+    passed: int
     needs_review: int
-    errors: int
+    total: int
 
 
 class BatchItemResult(BaseModel):

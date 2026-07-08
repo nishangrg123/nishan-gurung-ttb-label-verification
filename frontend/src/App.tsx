@@ -26,10 +26,9 @@ type VerificationResult = {
 };
 
 type BatchSummary = {
-  total: number;
-  approved: number;
+  passed: number;
   needs_review: number;
-  errors: number;
+  total: number;
 };
 
 type BatchItemResult = {
@@ -674,16 +673,12 @@ function BatchSummaryView({ summary }: { summary: BatchSummary }) {
           <dd>{summary.total}</dd>
         </div>
         <div>
-          <dt>Approved</dt>
-          <dd>{summary.approved}</dd>
+          <dt>Passed</dt>
+          <dd>{summary.passed}</dd>
         </div>
         <div>
           <dt>Needs Review</dt>
           <dd>{summary.needs_review}</dd>
-        </div>
-        <div>
-          <dt>Errors</dt>
-          <dd>{summary.errors}</dd>
         </div>
       </dl>
     </section>

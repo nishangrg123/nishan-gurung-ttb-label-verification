@@ -106,8 +106,7 @@ async def verify_batch(
     items = list(await asyncio.gather(*tasks))
 
     summary = BatchSummary(
-        total=len(items),
-        approved=sum(
+        passed=sum(
             1
             for item in items
             if item.result is not None and item.result.overall_verdict == "APPROVED"
@@ -117,7 +116,7 @@ async def verify_batch(
             for item in items
             if item.result is not None and item.result.overall_verdict == "NEEDS_REVIEW"
         ),
-        errors=sum(1 for item in items if item.status == "ERROR"),
+        total=len(items),
     )
 
     return BatchVerificationResponse(summary=summary, items=items)
