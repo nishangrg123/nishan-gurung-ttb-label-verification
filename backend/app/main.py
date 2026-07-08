@@ -45,35 +45,20 @@ async def verify(
     application_data: str = Form(...),
     vision_service: VisionService = Depends(get_vision_service),
 ):
-    if image.content_type not in ALLOWED_IMAGE_TYPES:
-        raise HTTPException(
-            status_code=400,
-            detail="Unsupported image type. Use JPEG, PNG, or WebP.",
-        )
-
-    image_bytes = await image.read()
-    if not image_bytes:
-        raise HTTPException(status_code=400, detail="Image file is empty.")
-    if len(image_bytes) > settings.max_image_bytes:
-        raise HTTPException(
-            status_code=400,
-            detail="Image is too large for fast extraction.",
-        )
-
     try:
         application = parse_application_data(application_data)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
     try:
-        return verify_label(
-            image_bytes=image_bytes,
-            content_type=image.content_type,
-            application=application,
-            vision_service=vision_service,
-        )
+        return await _verify_uploaded_image(image, application, vision_service)
     except VisionServiceError as exc:
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
+        status_code = 400 if str(exc) in {
+            "Unsupported image type. Use JPEG, PNG, or WebP.",
+            "Image file is empty.",
+            "Image is too large for fast extraction.",
+        } else 502
+        raise HTTPException(status_code=status_code, detail=str(exc)) from exc
 
 
 @app.post("/verify/batch")

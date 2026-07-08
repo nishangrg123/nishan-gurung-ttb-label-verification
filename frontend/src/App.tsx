@@ -416,7 +416,7 @@ function SingleLabelForm({
       <SubmitArea
         error={error}
         isSubmitting={isSubmitting}
-        loadingText="Reading the label and comparing it to the application details."
+        loadingText="Reading the label and comparing it to the application details. The first request may take up to a minute while the server wakes up."
         buttonText="Check Label"
         loadingButtonText="Checking Label..."
       />
@@ -493,7 +493,7 @@ function BatchForm({
       <SubmitArea
         error={error}
         isSubmitting={isSubmitting}
-        loadingText={`Checking ${items.length} ${items.length === 1 ? "label" : "labels"}...`}
+        loadingText={`Checking ${items.length} ${items.length === 1 ? "label" : "labels"}... The first request may take up to a minute while the server wakes up.`}
         buttonText="Check All Labels"
         loadingButtonText="Checking Labels..."
       />
