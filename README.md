@@ -203,6 +203,13 @@ curl -X POST https://ttb-label-verification-api.onrender.com/verify \
   }'
 ```
 
+Scripted live smoke check:
+
+```bash
+cd backend
+uv run python scripts/phase6_live_check.py
+```
+
 The `/verify` smoke check requires `OPENAI_API_KEY` to be set on Render.
 
 ## Assumptions
@@ -271,7 +278,14 @@ uv run pytest
 Current backend result:
 
 ```text
-54 passed
+55 passed
+```
+
+Frontend tests:
+
+```bash
+cd frontend
+npm run test
 ```
 
 Frontend build:
@@ -281,7 +295,7 @@ cd frontend
 npm run build
 ```
 
-The backend tests cover health, single verification, batch verification, strict batch summary shape, comparison rules, image validation, vision parsing, and fake/real provider wiring.
+The backend tests cover health, single verification, batch verification, strict batch summary shape, comparison rules, image validation, vision parsing, and fake/real provider wiring. The frontend smoke test verifies that the single-label form posts the image and all seven application fields to `/verify`.
 
 ## Local Setup
 

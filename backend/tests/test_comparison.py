@@ -51,6 +51,33 @@ def test_case_only_brand_difference_passes() -> None:
     assert _field(result, "brand_name").status == "PASS"
 
 
+def test_all_fields_compare_against_submitted_application_values() -> None:
+    submitted_warning = "CUSTOM WARNING: Serve chilled."
+    result = compare_label(
+        _application(
+            brand_name="Custom Reserve",
+            class_type="Cognac",
+            abv="40%",
+            net_contents="700 mL",
+            producer="Maison Example",
+            country_of_origin="France",
+            government_warning=submitted_warning,
+        ),
+        _extracted(
+            brand_name="custom reserve",
+            class_type="COGNAC",
+            abv="40% Alc./Vol.",
+            net_contents="70 cl",
+            producer="Maison Example",
+            country_of_origin="French Republic",
+            government_warning=submitted_warning,
+        ),
+    )
+
+    assert result.overall_verdict == "APPROVED"
+    assert all(item.status == "PASS" for item in result.results)
+
+
 def test_fuzzy_fields_normalize_punctuation_and_whitespace() -> None:
     result = compare_label(
         _application(brand_name="Example Reserve"),
