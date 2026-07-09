@@ -39,6 +39,11 @@ def health() -> dict[str, str]:
     return {"status": "ok", "service": "ttb-label-verification-api"}
 
 
+@app.get("/config")
+def public_config() -> dict[str, int]:
+    return {"max_batch_size": settings.max_batch_size}
+
+
 @app.post("/verify")
 async def verify(
     image: UploadFile = File(...),
