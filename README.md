@@ -212,6 +212,17 @@ uv run python scripts/phase6_live_check.py
 
 The `/verify` smoke check requires `OPENAI_API_KEY` to be set on Render.
 
+## Approved Sample Set
+
+These sample images were tested against the live backend on July 21, 2026 and returned `APPROVED`:
+
+- `backend/samples/sample-label.png`
+- `backend/samples/sample-label-example-reserve-simple-v1.png`
+- `backend/samples/sample-label-example-reserve-simple-v2.png`
+- `backend/samples/sample-label-example-reserve-simple-v3.png`
+
+Use them as the current reference set for quick manual checks, demo runs, or future regression tests.
+
 ## Assumptions
 
 - The submitted application data is the source of truth.
